@@ -111,8 +111,8 @@ $$\text{Drawdown}_t = \frac{\text{Equity}_t - \text{Peak Equity}_t}{\text{Peak E
 
 1. **Clone the Repository:**
 ```bash
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
+git clone https://github.com/pcm0nk/TradingDashboard.git
+cd TradingDashboard
 
 ```
 
