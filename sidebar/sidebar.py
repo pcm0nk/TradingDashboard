@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 import pandas as pd
+from sidebar.how_it_works import render_how_it_works_button
 
 # Paths to dummy data files sitting at project root alongside app.py
 STANDARD_DUMMY_PATH = "dummydata.csv"
@@ -8,12 +9,16 @@ BLOWN_DUMMY_PATH = "blownaccount_dummydata.csv"
 
 def render_sidebar():
     """
-    Renders the Streamlit sidebar containing file uploads and capital/segment controls.
-    Supports standard and blown account sample datasets with automated ledger top-ups.
+    Renders the Streamlit sidebar containing file uploads, walkthrough modal trigger,
+    and capital/segment controls.
     """
     st.sidebar.title("⚡ Control Panel")
     
-    # ── SAMPLE DATA SELECTION ──────────────────────────────────────────────────
+    # ── 0. WALKTHROUGH & DOCUMENTATION TRIGGER ──────────────────────────────────
+    render_how_it_works_button()
+    st.sidebar.markdown("---")
+
+    # ── 1. SAMPLE DATA SELECTION ────────────────────────────────────────────────
     sample_option = st.sidebar.selectbox(
         "Sample Data Option",
         options=["None (Upload File)", "Standard Dummy Data", "Blown Account Dummy Data"],
@@ -39,7 +44,7 @@ def render_sidebar():
     else:
         uploaded_file = st.sidebar.file_uploader("Upload Exchange CSV / Excel", type=['csv', 'xlsx'])
 
-    # 1. Reset state when a new file or sample dataset is selected
+    # 2. Reset state when a new file or sample dataset is selected
     if isinstance(uploaded_file, str):
         current_filename = uploaded_file
     elif uploaded_file is not None:
@@ -64,7 +69,7 @@ def render_sidebar():
 
     clean_df = st.session_state.get("clean_trades_df")
 
-    # 2. Keep ledger empty until clean trades are generated from Validation Analysis
+    # 3. Keep ledger empty until clean trades are generated from Validation Analysis
     if clean_df is None or clean_df.empty:
         st.session_state.deposit_ledger = pd.DataFrame(columns=["Type", "Date", "Amount ($)"])
         st.sidebar.info("⏳ Complete Validation Analysis to enable segment controls.")
@@ -83,14 +88,14 @@ def render_sidebar():
             
             # If Blown Account sample data is selected, append the second $10 top-up at 2026-04-17
             if sample_option == "Blown Account Dummy Data":
-                second_deposit_row = {"Type": "Deposit", "Date": "2026-04-17 13:16:10", "Amount ($)": 10.0}
+                second_deposit_row = {"Type": "Deposit", "Date": "2026-04-17 00:00:00", "Amount ($)": 10.0}
                 st.session_state.deposit_ledger = pd.DataFrame([initial_deposit_row, second_deposit_row])
             else:
                 st.session_state.deposit_ledger = pd.DataFrame([initial_deposit_row])
 
     st.sidebar.caption("Row 1 sets baseline starting capital & date. Row 2+ triggers top-up segments:")
 
-    # 3. Render interactive data editor
+    # 4. Render interactive data editor
     edited_ledger = st.sidebar.data_editor(
         st.session_state.deposit_ledger,
         num_rows="dynamic",

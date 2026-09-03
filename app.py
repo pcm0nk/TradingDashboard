@@ -46,7 +46,8 @@ if "diag_results" not in st.session_state:
     st.session_state.diag_results = None
 if "last_uploaded_filename" not in st.session_state:
     st.session_state.last_uploaded_filename = None
-
+if "show_walkthrough_modal" not in st.session_state:
+    st.session_state.show_walkthrough_modal = False
 # ── 3. RENDER SIDEBAR CONTROLS ────────────────────────────────────────────────
 uploaded_file, ledger_df = render_sidebar()
 
