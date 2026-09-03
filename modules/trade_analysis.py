@@ -139,8 +139,21 @@ def run_trade_analysis_phase(clean_trades_df: pd.DataFrame, meta: dict, ledger_d
 
         # 2. Sidebar Segment Switcher
         st.sidebar.markdown("---")
-        selected_seg_name = st.sidebar.selectbox("🎯 Select Active Segment", list(segments.keys()), key="active_segment_select")
+        # 1. Get the list of segment names (ensuring "All Segments Combined View" is at index 0)
+        segment_names = list(segments.keys())
 
+        # Find the index of "All Segments Combined View" in case the keys order varies
+        default_index = segment_names.index("All Segments (Combined View)") if "All Segments (Combined View)" in segment_names else 0
+
+        # 2. Render selectbox forced to index 0 (or default_index)
+        selected_seg_name = st.sidebar.selectbox(
+            "🎯 Select Active Segment", 
+            options=segment_names, 
+            index=default_index, 
+            key="active_segment_select"
+        )
+
+        # 3. Retrieve active segment data safely
         active_segment = segments[selected_seg_name]
         trades_df = active_segment['trades']
         seg_start_cap = active_segment['start_cap']

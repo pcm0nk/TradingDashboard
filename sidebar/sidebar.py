@@ -2,32 +2,50 @@ import os
 import streamlit as st
 import pandas as pd
 
-# Path to dummy data sitting at project root alongside app.py
-DUMMY_DATA_PATH = "dummydata.csv"
+# Paths to dummy data files sitting at project root alongside app.py
+STANDARD_DUMMY_PATH = "dummydata.csv"
+BLOWN_DUMMY_PATH = "blownaccount_dummydata.csv"
 
 def render_sidebar():
     """
     Renders the Streamlit sidebar containing file uploads and capital/segment controls.
-    Keeps table empty until trades pass validation analysis, then populates Row 1.
+    Supports standard and blown account sample datasets with automated ledger top-ups.
     """
     st.sidebar.title("⚡ Control Panel")
     
-    # ── DUMMY DATA CHECKBOX TOGGLE ─────────────────────────────────────────────
-    use_dummy = st.sidebar.checkbox("Use Sample Dummy Data (`dummydata.csv`)", value=False)
+    # ── SAMPLE DATA SELECTION ──────────────────────────────────────────────────
+    sample_option = st.sidebar.selectbox(
+        "Sample Data Option",
+        options=["None (Upload File)", "Standard Dummy Data", "Blown Account Dummy Data"],
+        index=0
+    )
 
     uploaded_file = None
 
-    if use_dummy:
-        if os.path.exists(DUMMY_DATA_PATH):
-            uploaded_file = DUMMY_DATA_PATH
-            st.sidebar.success("Loaded sample `dummydata.csv`.")
+    if sample_option == "Standard Dummy Data":
+        if os.path.exists(STANDARD_DUMMY_PATH):
+            uploaded_file = STANDARD_DUMMY_PATH
+            st.sidebar.success("Loaded `dummydata.csv`.")
         else:
-            st.sidebar.error(f"File not found: `{DUMMY_DATA_PATH}` at project root.")
+            st.sidebar.error(f"File not found: `{STANDARD_DUMMY_PATH}`")
+
+    elif sample_option == "Blown Account Dummy Data":
+        if os.path.exists(BLOWN_DUMMY_PATH):
+            uploaded_file = BLOWN_DUMMY_PATH
+            st.sidebar.warning("Loaded `blownaccount_dummydata.csv`.")
+        else:
+            st.sidebar.error(f"File not found: `{BLOWN_DUMMY_PATH}`")
+
     else:
         uploaded_file = st.sidebar.file_uploader("Upload Exchange CSV / Excel", type=['csv', 'xlsx'])
 
-    # 1. Reset state when a new file or source is selected
-    current_filename = DUMMY_DATA_PATH if use_dummy else (uploaded_file.name if uploaded_file is not None and not isinstance(uploaded_file, str) else None)
+    # 1. Reset state when a new file or sample dataset is selected
+    if isinstance(uploaded_file, str):
+        current_filename = uploaded_file
+    elif uploaded_file is not None:
+        current_filename = uploaded_file.name
+    else:
+        current_filename = None
     
     if current_filename is not None:
         if st.session_state.get("last_uploaded_filename") != current_filename:
@@ -59,11 +77,16 @@ def render_sidebar():
         else:
             earliest_dt_str = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Auto-initialize Row 1 once clean trades exist
+        # Auto-initialize ledger once clean trades exist
         if st.session_state.get("deposit_ledger") is None or st.session_state.deposit_ledger.empty:
-            st.session_state.deposit_ledger = pd.DataFrame([
-                {"Type": "Deposit", "Date": earliest_dt_str, "Amount ($)": 10.0}
-            ])
+            initial_deposit_row = {"Type": "Deposit", "Date": earliest_dt_str, "Amount ($)": 10.0}
+            
+            # If Blown Account sample data is selected, append the second $10 top-up at 2026-04-17
+            if sample_option == "Blown Account Dummy Data":
+                second_deposit_row = {"Type": "Deposit", "Date": "2026-04-17 13:16:10", "Amount ($)": 10.0}
+                st.session_state.deposit_ledger = pd.DataFrame([initial_deposit_row, second_deposit_row])
+            else:
+                st.session_state.deposit_ledger = pd.DataFrame([initial_deposit_row])
 
     st.sidebar.caption("Row 1 sets baseline starting capital & date. Row 2+ triggers top-up segments:")
 
