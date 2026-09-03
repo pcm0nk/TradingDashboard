@@ -88,7 +88,7 @@ def render_sidebar():
             
             # If Blown Account sample data is selected, append the second $10 top-up at 2026-04-17
             if sample_option == "Blown Account Dummy Data":
-                second_deposit_row = {"Type": "Deposit", "Date": "2026-04-17 00:00:00", "Amount ($)": 10.0}
+                second_deposit_row = {"Type": "Deposit", "Date": "2026-04-17 13:13:13", "Amount ($)": 10.0}
                 st.session_state.deposit_ledger = pd.DataFrame([initial_deposit_row, second_deposit_row])
             else:
                 st.session_state.deposit_ledger = pd.DataFrame([initial_deposit_row])
