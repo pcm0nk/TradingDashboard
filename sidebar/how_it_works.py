@@ -1,69 +1,118 @@
+import os
+import pandas as pd
 import streamlit as st
+
+# Path to standard dummy dataset at root
+STANDARD_DUMMY_PATH = "dummydata.csv"
 
 def show_how_it_works_dialog():
     """
     Renders the modal dialog explaining dashboard features, dataset choices,
-    capital control ledger, validation phase, and trading analysis tabs.
+    accepted direction variants, sample downloads, capital control, validation, and analytics tabs.
     """
-    @st.dialog("📖 Dashboard Walkthrough & Documentation", width="large")
+    @st.dialog("📖 Dashboard Walkthrough & Documentation", width="medium")
     def _render_dialog():
-        st.markdown("Welcome to the **Quantitative Trading & Diagnostic Suite**! This guide explains how data flows through the application and how to interpret each component.")
+        st.markdown("Welcome to the **Quantitative Trading & Diagnostic Suite**! This guide explains data formatting, accepted directions, sample downloads, and system usage.")
 
         st.markdown("---")
 
-        # Tabbed view inside the modal for structured navigation
+        # Tabbed view inside the modal
         doc_tab1, doc_tab2, doc_tab3, doc_tab4 = st.tabs([
-            "📂 1. Data Ingestion & Samples",
-            "💰 2. Capital & Segment Control",
+            "📂 1. Data Requirements",
+            "💰 2. Capital Control",
             "🛡️ 3. Section 1: Validation",
             "📈 4. Section 2: Trading Analysis"
         ])
 
         with doc_tab1:
-            st.markdown("### 📂 Data Ingestion & Sample Datasets")
-            st.markdown("""
-            You can analyze custom exchange logs or test the platform using built-in datasets:
+            st.markdown("### 📂 Data Ingestion & Accepted Schema")
+            st.markdown("Custom CSV/Excel logs (`.csv`, `.xlsx`) must align with the core schema below:")
+
+            # Restored Schema Table with dedicated Open/Close Direction rows
+            schema_data = {
+                "Column Name": [
+                    "Open Time", 
+                    "Close Time", 
+                    "Symbol / Pair", 
+                    "Open Direction", 
+                    "Close Direction", 
+                    "Price", 
+                    "Qty / Size", 
+                    "Fee"
+                ],
+                "Accepted Variants": [
+                    "Open Time, open_time, Time, datetime",
+                    "Close Time, close_time, exit_time",
+                    "Symbol, Pair, symbol, pair, Instrument",
+                    "OPEN_LONG, OPEN_SHORT, BUY, LONG, Open Long, Open Short",
+                    "CLOSE_LONG, CLOSE_SHORT, CLOSE LONG, CLOSE SHORT, SELL, SHORT, Close Long, Close Short, BURST_LIQUIDATE_LONG, BURST_LIQUIDATE_SHORT, OFFSET_LIQUIDATE_SHORT, FORCE_LIQUIDATE_SHORT, FORCE_LIQUIDATE_LONG, OFFSET_LIQUIDATE_LONG",
+                    "Price, price, Executed Price",
+                    "Qty, Size, Quantity, Amount, Volume",
+                    "Fee, Fees, Commission, fee_amount"
+                ],
+                "Example": [
+                    "2026-04-10 14:30:00",
+                    "2026-04-10 15:45:00",
+                    "BTCUSDT",
+                    "OPEN_LONG",
+                    "CLOSE_LONG",
+                    "65400.50",
+                    "0.15",
+                    "0.0025"
+                ]
+            }
+            st.table(pd.DataFrame(schema_data))
+
+            st.markdown("---")
             
-            1. **Upload Exchange File:**
-               - Upload your own trade history in **CSV** or **Excel** format (`.csv`, `.xlsx`).
-            2. **Standard Dummy Data (`dummydata.csv`):**
-               - A clean, standard trading history covering multiple crypto assets with normal entry/exit dynamics.
-            3. **Blown Account Dummy Data (`blownaccount_dummydata.csv`):**
-               - Simulates a high-drawdown strategy that experiences account liquidation/blowout. Selecting this automatically loads a **2-segment top-up setup** in the Capital Control panel.
-            """)
+            # Inline Download Section
+            dl_col1, dl_col2 = st.columns([2, 1], vertical_alignment="center")
+
+            with dl_col1:
+                st.markdown("**Download sample template for formatting reference:**")
+
+            with dl_col2:
+                if os.path.exists(STANDARD_DUMMY_PATH):
+                    with open(STANDARD_DUMMY_PATH, "rb") as file:
+                        st.download_button(
+                            label="⬇️ Download Sample Template CSV",
+                            data=file,
+                            file_name="sample_trading_log_template.csv",
+                            mime="text/csv",
+                            use_container_width=True
+                        )
+                else:
+                    st.caption("⚠️ `dummydata.csv` missing at root.")
 
         with doc_tab2:
             st.markdown("### 💰 Capital & Segment Control Ledger")
             st.markdown("""
-            The interactive ledger in the sidebar manages portfolio equity, initial baseline start dates, and capital injections across time:
+            The interactive ledger in the sidebar manages portfolio equity and capital injections:
             
-            * **Row 1 (Baseline Starting Capital):**
-              - Automatically populated with the earliest trade date found in your log and a default $10 baseline.
-            * **Row 2+ (Top-Ups & Injections):**
-              - Add rows to simulate capital injections (e.g., adding $10 on `2026-04-17`).
-              - Each new deposit row establishes a new **Segment**, dividing trading metrics into isolated time windows.
-            * **Active Segment Selector:**
-              - Defaults to **"All Segments Combined View"** to analyze overall performance across the entire account lifecycle.
+            * **Row 1 (Baseline Starting Capital):** Auto-set to the earliest trade date with a $10 baseline.
+            * **Row 2+ (Top-Ups):** Add rows to simulate capital injections (e.g., $10 on `2026-04-17`), creating new analysis **Segments**.
+            * **Active Segment Selector:** Defaults to **"All Segments Combined View"** for overall lifecycle analysis.
             """)
 
         with doc_tab3:
             st.markdown("### 🛡️ Section 1: Validation Analysis Phase")
             st.markdown("""
-            Before trading metrics are calculated, raw execution logs undergo multi-stage data integrity validation:
+            Multi-stage data integrity validation before performance analytics:
             
-            * **Schema Verification:** Standardizes columns (`Open Time`, `Close Time`, `Symbol/Pair`, `Side`, `Price`, `Qty`, `Fees`).
-            * **FIFO Matching Engine:** Pairs entry executions with exit executions on a First-In-First-Out basis.
-            * **Orphan Detection:** Isolates **Orphan Closes** (exits without recorded entries) and **Orphan Opens** (unclosed inventory) to protect PnL accuracy.
+            * **Schema Verification:** Standardizes columns (`Open Time`, `Close Time`, `Pair`, `Directions`, `Price`, `Qty`, `Fees`).
+            * **FIFO Engine:** Matches entries and exits chronologically.
+            * **Orphan Detection:** Isolates **Orphan Closes** (missing entries) and **Orphan Opens** (unclosed inventory).
             """)
 
         with doc_tab4:
             st.markdown("### 📈 Section 2: Trading Analysis Engine")
             st.markdown("""
-            Once trade logs pass validation, explore execution diagnostics across tabs:
-            
-            * **📊 Executive Summary:** High-level metrics including Net Realized PnL, Win Rate, Profit Factor, Open/Close Fees, Equity Curves, and Drawdown depth.
-            * **🔍 Trade Analysis & Strategies:** Itemized matched trade details with hold durations, pair metrics, and exit triggers (`TP`, `SL`, `Liquidation`, `Breakeven`).
-            * **⚠️ Anomalies & Diagnostics:** Logs and tracks missing data rows or unmapped fee logs for complete quantitative auditing.
+            * **📊 Executive Summary:** High-level metrics—Net Realized PnL, Win Rate, Profit Factor, Open/Close Fees, Equity Curves, and Drawdown.
+            * **🎯 Pair Performance:** Per-pair vs. total performance breakdowns with PnL, fee analysis, and visual charts.
+            * **⏰ Session Dynamics:** Trade count and win-rate distribution mapped across market sessions with visual charting.
+            * **🔄 Session Transitions & Holds:** Tracks position entry/exit sessions, hold durations, and exit triggers (`TP`, `SL`, `Liquidation`).
+            * **🔍 Audit & Trade Logs:** Detailed execution table featuring trade session tags and blown-account audit logging.
+            * **⚙️ Session Settings & Risk:** Account parameters—Segment Start Capital, Ending Equity, Max Peak, Risk/Drawdown thresholds, and Max $/% Drawdown.
             """)
 
         st.markdown("---")

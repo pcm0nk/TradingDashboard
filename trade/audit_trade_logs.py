@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 def render_audit_trade_logs_tab(trades_df, blown_trades, has_blown, selected_seg_name):
-    st.markdown(f"### 📜 Complete Completed Trade Log & Blowout Audit — `{selected_seg_name}`")
+    st.markdown(f"### 📜 Complete Trade Log & Blowout Audit — `{selected_seg_name}`")
 
     if has_blown:
         st.error(f"🚨 **{len(blown_trades)} Blowout Trade Event(s) Detected**")
