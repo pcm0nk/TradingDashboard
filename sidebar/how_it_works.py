@@ -10,7 +10,7 @@ def show_how_it_works_dialog():
     Renders the modal dialog explaining dashboard features, dataset choices,
     accepted direction variants, sample downloads, capital control, validation, and analytics tabs.
     """
-    @st.dialog("📖 Dashboard Walkthrough & Documentation", width="medium")
+    @st.dialog("📖 Dashboard Walkthrough & Documentation", width="large")
     def _render_dialog():
         st.markdown("Welcome to the **Quantitative Trading & Diagnostic Suite**! This guide explains data formatting, accepted directions, sample downloads, and system usage.")
 
