@@ -2,29 +2,7 @@
 
 An end-to-end, high-performance trading analytics platform built with Streamlit and Python. This system ingests raw trade fill logs from crypto and futures exchanges, executes precise **First-In-First-Out (FIFO)** order matching to reconstruct individual trade lifecycles, and provides deep institutional-grade performance analytics, interactive equity charts, and drawdown modeling.
 
----
 
-## Architecture & Project Structure
-
-The project is modularized into dedicated engines for data ingestion, trade matching, mathematical calculations, and Streamlit visualization components.
-
-```text
-.
-├── app.py                      # Main Streamlit application entry point & layout routing
-├── modules/
-│   ├── engine/
-│   │   ├── fifo_engine.py      # Core FIFO trade-matching algorithm & anomaly detection
-│   │   └── processing.py       # Data cleaning, normalization, & timeline builder
-│   ├── tabs/
-│   │   ├── executive_summary.py# High-level KPIs, equity curve, & fee breakdown
-│   │   ├── trade_analysis.py   # Individual trade log table, duration, & win/loss stats
-│   │   └── anomalies.py        # Table and breakdown of orphan opens/closes
-│   └── charts/
-│       └── equity_charts.py    # Plotly interactive cumulative equity & drawdown visualizers
-├── requirements.txt            # Python dependencies (pandas, streamlit, plotly, numpy)
-└── README.md                   # Project documentation
-
-```
 
 ---
 
