@@ -69,7 +69,7 @@ def show_how_it_works_dialog():
             dl_col1, dl_col2 = st.columns([2, 1], vertical_alignment="center")
 
             with dl_col1:
-                st.markdown("**Download sample template for formatting reference:**")
+                st.markdown("Download the standard sample CSV template to see the complete expected column structure and date formatting before uploading custom logs")
 
             with dl_col2:
                 if os.path.exists(STANDARD_DUMMY_PATH):
