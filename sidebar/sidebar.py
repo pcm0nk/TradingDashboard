@@ -21,7 +21,7 @@ def render_sidebar():
     # ── 1. SAMPLE DATA SELECTION ────────────────────────────────────────────────
     sample_option = st.sidebar.selectbox(
         "Sample Data Option",
-        options=["None (Upload File)", "Standard Dummy Data", "Blown Account Dummy Data"],
+        options=["None (Select Sample File)", "Standard Dummy Data", "Blown Account Dummy Data"],
         index=0
     )
 
