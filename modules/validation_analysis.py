@@ -11,7 +11,17 @@ def run_validation_phase(uploaded_file):
     and FIFO Order Matching.
     """
     # 1. Load Raw File and Standardize Schema
-    raw_df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
+    if isinstance(uploaded_file, str):
+        file_name = uploaded_file
+    else:
+        file_name = uploaded_file.name
+
+    # Load CSV or Excel based on file extension
+    if file_name.lower().endswith('.csv'):
+        raw_df = pd.read_csv(uploaded_file)
+    else:
+        raw_df = pd.read_excel(uploaded_file)
+        
     df = clean_and_prepare_data(raw_df)
 
     start_dt = df['fill_time'].min().strftime('%Y-%m-%d %H:%M UTC')

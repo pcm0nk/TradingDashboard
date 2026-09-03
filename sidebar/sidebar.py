@@ -1,5 +1,9 @@
+import os
 import streamlit as st
 import pandas as pd
+
+# Path to dummy data sitting at project root alongside app.py
+DUMMY_DATA_PATH = "dummydata.csv"
 
 def render_sidebar():
     """
@@ -7,11 +11,26 @@ def render_sidebar():
     Keeps table empty until trades pass validation analysis, then populates Row 1.
     """
     st.sidebar.title("⚡ Control Panel")
-    uploaded_file = st.sidebar.file_uploader("Upload Exchange CSV / Excel", type=['csv', 'xlsx'])
+    
+    # ── DUMMY DATA CHECKBOX TOGGLE ─────────────────────────────────────────────
+    use_dummy = st.sidebar.checkbox("Use Sample Dummy Data (`dummydata.csv`)", value=False)
 
-    # 1. Reset state when a new file is uploaded
-    if uploaded_file is not None:
-        if st.session_state.get("last_uploaded_filename") != uploaded_file.name:
+    uploaded_file = None
+
+    if use_dummy:
+        if os.path.exists(DUMMY_DATA_PATH):
+            uploaded_file = DUMMY_DATA_PATH
+            st.sidebar.success("Loaded sample `dummydata.csv`.")
+        else:
+            st.sidebar.error(f"File not found: `{DUMMY_DATA_PATH}` at project root.")
+    else:
+        uploaded_file = st.sidebar.file_uploader("Upload Exchange CSV / Excel", type=['csv', 'xlsx'])
+
+    # 1. Reset state when a new file or source is selected
+    current_filename = DUMMY_DATA_PATH if use_dummy else (uploaded_file.name if uploaded_file is not None and not isinstance(uploaded_file, str) else None)
+    
+    if current_filename is not None:
+        if st.session_state.get("last_uploaded_filename") != current_filename:
             st.session_state.validation_meta = None
             st.session_state.diag_results = None
             st.session_state.clean_trades_df = None
@@ -20,7 +39,7 @@ def render_sidebar():
             st.session_state.analysis_ran = False
             if "deposit_ledger" in st.session_state:
                 del st.session_state["deposit_ledger"]
-            st.session_state.last_uploaded_filename = uploaded_file.name
+            st.session_state.last_uploaded_filename = current_filename
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Capital and Segment Control")
@@ -41,7 +60,7 @@ def render_sidebar():
             earliest_dt_str = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # Auto-initialize Row 1 once clean trades exist
-        if st.session_state.deposit_ledger.empty:
+        if st.session_state.get("deposit_ledger") is None or st.session_state.deposit_ledger.empty:
             st.session_state.deposit_ledger = pd.DataFrame([
                 {"Type": "Deposit", "Date": earliest_dt_str, "Amount ($)": 10.0}
             ])
