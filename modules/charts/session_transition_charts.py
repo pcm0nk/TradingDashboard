@@ -35,7 +35,7 @@ def render_session_gantt_chart(session_trades_df: pd.DataFrame):
         with col_left:
             trade_input_str = st.text_input(
                 "Number of Recent Trades to Display",
-                value="20",
+                value="30",
                 key="gantt_chart_trade_text_box",
                 help="Type any number (e.g. 10, 20, 50) or check 'Show All Trades'.",
             )
