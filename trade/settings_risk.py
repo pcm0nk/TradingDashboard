@@ -122,6 +122,7 @@ def render_settings_risk_tab(
             help="Highest account equity high-water mark reached during this segment.",
         )
 
+
     st.markdown("---")
 
     # --- Section 2: Performance & Risk Ratios (3-Column Layout for Full-Width Labels) ---

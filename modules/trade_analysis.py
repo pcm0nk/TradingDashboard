@@ -48,6 +48,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 def prepare_session_flags(trades_df: pd.DataFrame) -> pd.DataFrame:
     """Applies session flags to already-matched FIFO trade records."""
     if trades_df.empty or 'exit_time' not in trades_df.columns:
