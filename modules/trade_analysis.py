@@ -85,7 +85,6 @@ def confirm_and_run_analysis_dialog(clean_trades_df: pd.DataFrame):
         "processed through the FIFO order matching engine. Unmatched or orphan orders will be excluded."
     )
 
-    # Track processing status in session_state for this modal session
     if 'processing_complete' not in st.session_state:
         st.session_state.processing_complete = False
 
@@ -117,11 +116,8 @@ def confirm_and_run_analysis_dialog(clean_trades_df: pd.DataFrame):
             "✅ Analysis complete! Click OK to dismiss and view your dashboard."
         )
         if st.button("OK", type="primary", use_container_width=True):
-            # Reset modal tracking state and rerun to close the dialog
             del st.session_state.processing_complete
             st.rerun()
-
-# Custom CSS to force tabs to wrap or fit full width without scrolling
 
 
 def run_trade_analysis_phase(

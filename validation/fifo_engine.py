@@ -3,17 +3,112 @@ import numpy as np
 from typing import Tuple
 
 
-def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def consolidate_position_trades(clean_trades_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Groups sub-fragment FIFO matched executions (partial TPs, scaled entries)
+    into single consolidated position records representing full entry-to-flat lifecycles.
+    """
+    if clean_trades_df is None or clean_trades_df.empty:
+        return pd.DataFrame()
+
+    df = clean_trades_df.copy()
+    consolidated_positions = []
+
+    for pair, grp in df.groupby('pair'):
+        # Sort chronologically by entry time
+        grp = grp.sort_values(['entry_time', 'exit_time']).reset_index(drop=True)
+
+        current_group = []
+        pos_direction = None
+
+        for _, row in grp.iterrows():
+            if not current_group:
+                current_group.append(row)
+                pos_direction = row['direction']
+                continue
+
+            prev_row = current_group[-1]
+
+            # Group condition: contiguous trade in same pair & direction where
+            # the next entry occurs before or during the previous exit window
+            if row['direction'] == pos_direction and row['entry_time'] <= prev_row['exit_time']:
+                current_group.append(row)
+            else:
+                # Flush existing grouped position
+                consolidated_positions.append(_aggregate_group(current_group))
+                current_group = [row]
+                pos_direction = row['direction']
+
+        if current_group:
+            consolidated_positions.append(_aggregate_group(current_group))
+
+    cons_df = pd.DataFrame(consolidated_positions)
+    if not cons_df.empty:
+        cons_df = cons_df.sort_values('exit_time').reset_index(drop=True)
+
+    return cons_df
+
+
+def _aggregate_group(group_rows: list) -> dict:
+    """Helper function to aggregate multiple partial fill records into one position."""
+    grp_df = pd.DataFrame(group_rows)
+    total_qty = grp_df['quantity'].sum()
+
+    # Weighted average entry and exit prices
+    weighted_entry = (grp_df['entry_price'] * grp_df['quantity']).sum() / total_qty if total_qty > 0 else grp_df['entry_price'].iloc[0]
+    weighted_exit = (grp_df['exit_price'] * grp_df['quantity']).sum() / total_qty if total_qty > 0 else grp_df['exit_price'].iloc[-1]
+
+    total_pnl = grp_df['pnl'].sum()
+    total_fees_entry = grp_df['fees_entry'].sum()
+    total_fees_exit = grp_df['fees_exit'].sum()
+    total_fees = grp_df['fees_total'].sum()
+
+    entry_time = grp_df['entry_time'].min()
+    exit_time = grp_df['exit_time'].max()
+
+    hold_minutes = 0.0
+    if pd.notnull(entry_time) and pd.notnull(exit_time):
+        hold_minutes = max(0.0, (exit_time - entry_time).total_seconds() / 60.0)
+
+    # Classify position exit outcome
+    if (grp_df['exit_type'] == 'Liquidation').any():
+        exit_type = 'Liquidation'
+    elif total_pnl > 0:
+        exit_type = 'TP'
+    elif total_pnl < 0:
+        exit_type = 'SL'
+    else:
+        exit_type = 'Breakeven'
+
+    return {
+        'pair': grp_df['pair'].iloc[0],
+        'entry_time': entry_time,
+        'exit_time': exit_time,
+        'direction': grp_df['direction'].iloc[0],
+        'exit_direction': grp_df['exit_direction'].iloc[-1],
+        'entry_price': weighted_entry,
+        'exit_price': weighted_exit,
+        'quantity': total_qty,
+        'pnl': total_pnl,
+        'fees_entry': total_fees_entry,
+        'fees_exit': total_fees_exit,
+        'fees_total': total_fees,
+        'net_pnl': total_pnl,
+        'hold_minutes': hold_minutes,
+        'exit_type': exit_type,
+        'sub_fill_count': len(grp_df)  # Tracks how many partial fills were merged
+    }
+
+
+def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Executes First-In-First-Out (FIFO) trade matching across pairs.
 
     Returns:
-        tuple: (clean_trades_df, anomalies_df)
-            - clean_trades_df: Only fully resolved matched entry-exit trade pairs.
-            - anomalies_df: Table of orphan closes (missing opens) and unclosed opens.
+        tuple: (clean_trades_df, consolidated_trades_df, anomalies_df)
     """
     if df is None or df.empty:
-        return pd.DataFrame(), pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
     df = df.copy()
 
@@ -44,7 +139,7 @@ def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
             quantity = float(row.get('quantity', 0.0))
             pnl = float(row.get('pnl', 0.0))
             fees = float(row.get('fees', 0.0))
-    
+
             # ── 1. HANDLE ENTRY FILLS ───────────────────────────────────────
             if direction in open_dirs:
                 open_queue.append({
@@ -60,7 +155,6 @@ def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
             # ── 2. HANDLE EXIT FILLS ────────────────────────────────────────
             elif direction in close_dirs:
-                # ANOMALY: Exit fill occurs with NO prior open inventory
                 if not open_queue:
                     anomalies.append({
                         'source_row': row_idx,
@@ -81,7 +175,6 @@ def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
                     entry = open_queue[0]
                     matched_qty = min(entry['remaining_qty'], close_qty_remaining)
 
-                    # Pro-rate entry/exit fees and PnL for partial fills
                     qty_ratio_entry = matched_qty / entry['original_qty'] if entry['original_qty'] > 0 else 1.0
                     qty_ratio_exit = matched_qty / original_close_qty if original_close_qty > 0 else 1.0
 
@@ -93,7 +186,6 @@ def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
                     if pd.notnull(fill_time) and pd.notnull(entry['fill_time']):
                         hold_minutes = max(0.0, (fill_time - entry['fill_time']).total_seconds() / 60.0)
 
-                    # Categorize Exit Reason
                     if 'LIQUIDATE' in direction.upper():
                         exit_type = 'Liquidation'
                     elif pnl_allocated > 0:
@@ -103,8 +195,6 @@ def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
                     else:
                         exit_type = 'Breakeven'
 
-                    # Record clean matched trade pair
-                    # Fees are tracked separately; PnL is untouched (fees settled against margin)
                     clean_trades.append({
                         'pair': pair,
                         'entry_time': entry['fill_time'],
@@ -118,19 +208,17 @@ def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
                         'fees_entry': fees_entry,
                         'fees_exit': fees_exit,
                         'fees_total': fees_entry + fees_exit,
-                        'net_pnl': pnl_allocated,  # Untouched PnL (fees deducted from margin/wallet)
+                        'net_pnl': pnl_allocated,
                         'hold_minutes': hold_minutes,
                         'exit_type': exit_type
                     })
 
-                    # Deduct matched quantity from queue & current close order
                     entry['remaining_qty'] -= matched_qty
                     close_qty_remaining -= matched_qty
 
                     if entry['remaining_qty'] <= 1e-8:
                         open_queue.pop(0)
 
-                # ANOMALY: Exit fill had partial or total quantity remaining after exhausting open queue
                 if close_qty_remaining > 1e-8:
                     anomalies.append({
                         'source_row': row_idx,
@@ -143,7 +231,7 @@ def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
                         'reason': 'Exhausted open order queue before fully matching exit quantity'
                     })
 
-        # ── 3. HANDLE UNCLOSED OPEN INVENTORY AT END OF FILE ───────────────
+        # ── 3. HANDLE UNCLOSED OPEN INVENTORY ───────────────────────────────
         for unclosed_entry in open_queue:
             if unclosed_entry['remaining_qty'] > 1e-8:
                 anomalies.append({
@@ -157,14 +245,15 @@ def process_fifo_trades(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
                     'reason': 'Unmatched position inventory remaining at end of dataset window'
                 })
 
-    # Construct Clean Trades DataFrame
     clean_trades_df = pd.DataFrame(clean_trades)
     if not clean_trades_df.empty:
         clean_trades_df = clean_trades_df.sort_values('exit_time').reset_index(drop=True)
 
-    # Construct Anomalies DataFrame
+    # Generate consolidated position dataset
+    consolidated_trades_df = consolidate_position_trades(clean_trades_df)
+
     anomalies_df = pd.DataFrame(anomalies)
     if not anomalies_df.empty:
         anomalies_df = anomalies_df.sort_values('source_row').reset_index(drop=True)
 
-    return clean_trades_df, anomalies_df
+    return clean_trades_df, consolidated_trades_df, anomalies_df
