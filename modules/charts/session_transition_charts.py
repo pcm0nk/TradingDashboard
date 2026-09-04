@@ -18,7 +18,7 @@ EXIT_TYPE_COLORS = {
 
 
 def render_session_gantt_chart(session_trades_df: pd.DataFrame):
-    """Renders display controls and Gantt chart for session transitions."""
+    """Renders display controls (with dataset-driven From/To date selectboxes) and Gantt chart for session transitions."""
     if session_trades_df.empty:
         st.info("No trades available for session transition charting.")
         return
@@ -26,16 +26,29 @@ def render_session_gantt_chart(session_trades_df: pd.DataFrame):
     # Total trades count in dataset
     total_trades_count = len(session_trades_df)
 
+    # Extract unique dates present in the dataset (Formatted YYYY-MM-DD)
+    available_dates = (
+        pd.to_datetime(session_trades_df['exit_time'])
+        .dt.strftime('%Y-%m-%d')
+        .drop_duplicates()
+        .sort_values()
+        .tolist()
+    )
+
+    if not available_dates:
+        available_dates = [pd.Timestamp.now().strftime('%Y-%m-%d')]
+
     # 1. Render Side-by-Side Controls inside a bordered container
     with st.container(border=True):
         st.markdown("##### ⚙️ Chart Display Controls")
 
-        col_left, col_right = st.columns(2)
+        # Top row: Trade count text box, Show All checkbox, Chart Height slider
+        col1, col2, col3 = st.columns([2, 2, 2])
 
-        with col_left:
+        with col1:
             trade_input_str = st.text_input(
                 "Number of Recent Trades to Display",
-                value="30",
+                value="20",
                 key="gantt_chart_trade_text_box",
                 help="Type any number (e.g. 10, 20, 50) or check 'Show All Trades'.",
             )
@@ -46,7 +59,24 @@ def render_session_gantt_chart(session_trades_df: pd.DataFrame):
                 key="gantt_chart_show_all_cb",
             )
 
-        with col_right:
+        with col2:
+            from_date = st.selectbox(
+                "📅 From Date",
+                options=available_dates,
+                index=0,
+                key="gantt_from_date_select",
+                help="Select starting date filter from dates present in dataset.",
+            )
+
+            to_date = st.selectbox(
+                "📅 To Date",
+                options=available_dates,
+                index=len(available_dates) - 1,
+                key="gantt_to_date_select",
+                help="Select ending date filter from dates present in dataset.",
+            )
+
+        with col3:
             chart_height = st.slider(
                 "Adjust Chart Height (px)",
                 min_value=400,
@@ -56,28 +86,39 @@ def render_session_gantt_chart(session_trades_df: pd.DataFrame):
                 key="gantt_chart_height_slider",
             )
 
-    # 2. Slice dataset based on user controls
+        if from_date > to_date:
+            st.warning("⚠️ **Warning:** 'From Date' is set after 'To Date'. Please adjust selection.")
+
+    # 2. Slice dataset based on date selectboxes
+    df_copy = session_trades_df.copy()
+    df_copy['date_str'] = pd.to_datetime(df_copy['exit_time']).dt.strftime('%Y-%m-%d')
+
+    date_filtered_df = df_copy[
+        (df_copy['date_str'] >= from_date) & (df_copy['date_str'] <= to_date)
+    ].drop(columns=['date_str'], errors='ignore')
+
+    # 3. Slice dataset based on recent trade count controls
     if show_all_trades:
-        chart_df = session_trades_df.copy()
+        chart_df = date_filtered_df.copy()
     else:
         try:
             num_trades = int(trade_input_str.strip())
-            num_trades = max(1, min(num_trades, total_trades_count))
+            num_trades = max(1, min(num_trades, len(date_filtered_df)))
         except (ValueError, AttributeError):
-            num_trades = min(20, total_trades_count)
+            num_trades = min(20, len(date_filtered_df))
 
-        chart_df = session_trades_df.tail(num_trades).copy()
+        chart_df = date_filtered_df.tail(num_trades).copy() if not date_filtered_df.empty else date_filtered_df.copy()
 
-    # Store sliced result back into attrs for the audit log table
+    # Store sliced result back into attrs for the detailed audit log table
     session_trades_df.attrs["filtered_df"] = chart_df
 
     if chart_df.empty:
-        st.info("No trades found for selected view.")
+        st.info("No trades found for selected date range and view options.")
         return
 
     fig = go.Figure()
 
-    # 3. Add Trade Lifecycles as horizontal Gantt lines
+    # 4. Add Trade Lifecycles as horizontal Gantt lines
     for idx, row in chart_df.iterrows():
         exit_reason = str(row.get('exit_type', row.get('Exit Type', 'N/A')))
         line_color = EXIT_TYPE_COLORS.get(exit_reason, '#9E9E9E')
@@ -123,7 +164,7 @@ def render_session_gantt_chart(session_trades_df: pd.DataFrame):
             )
         )
 
-    # 4. Add Exit Type Legend traces
+    # 5. Add Exit Type Legend traces
     for exit_code, hex_color in EXIT_TYPE_COLORS.items():
         if (
             exit_code in chart_df['exit_type'].values
@@ -146,7 +187,7 @@ def render_session_gantt_chart(session_trades_df: pd.DataFrame):
     x_start = min_time - pd.Timedelta(minutes=15)
     x_end = max_time + pd.Timedelta(minutes=15)
 
-    # 5. Apply layout settings with legend anchored OUTSIDE the plotting canvas
+    # 6. Apply layout settings
     fig.update_layout(
         **PLOTLY_DARK_LAYOUT,
         title=dict(
@@ -171,12 +212,12 @@ def render_session_gantt_chart(session_trades_df: pd.DataFrame):
             automargin=True,
         ),
         height=chart_height,
-        margin=dict(l=40, r=40, t=110, b=50),  # Expanded top margin to prevent overlapping
+        margin=dict(l=40, r=40, t=110, b=50),
         hovermode='closest',
         legend=dict(
             orientation='h',
             yanchor='bottom',
-            y=1.02,  # Places legend directly above plot boundary
+            y=1.02,
             xanchor='left',
             x=0,
         ),
