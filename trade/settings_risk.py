@@ -41,11 +41,20 @@ def render_settings_risk_tab(
 
     # --- Core Metric Calculations ---
     tot_pnl = pnl_series.sum()
+    total_trades = len(pnl_series)
+    avg_pnl = pnl_series.mean() if total_trades > 0 else 0.0
+
     avg_win = wins.mean() if len(wins) > 0 else 0.0
     avg_loss = abs(losses.mean()) if len(losses) > 0 else 0.0
 
-    win_rate = len(wins) / len(pnl_series) if len(pnl_series) > 0 else 0.0
-    loss_rate = len(losses) / len(pnl_series) if len(pnl_series) > 0 else 0.0
+    win_count = len(wins)
+    loss_count = len(losses)
+    win_loss_ratio = (
+        win_count / loss_count if loss_count > 0 else (float(win_count) if win_count > 0 else 0.0)
+    )
+
+    win_rate = win_count / total_trades if total_trades > 0 else 0.0
+    loss_rate = loss_count / total_trades if total_trades > 0 else 0.0
 
     # Expectancy ($ per trade) = (Win Rate * Avg Win) - (Loss Rate * Avg Loss)
     expectancy = (win_rate * avg_win) - (loss_rate * avg_loss)
@@ -79,7 +88,7 @@ def render_settings_risk_tab(
     sharpe = compute_sharpe(pnl_series)
     sortino = compute_sortino(pnl_series)
 
-    # --- Section 1: Account & Drawdown Thresholds (Expanded columns so labels never truncate) ---
+    # --- Section 1: Account & Drawdown Thresholds ---
     st.markdown("#### Account & Drawdown Thresholds")
     col1, col2, col3 = st.columns(3)
 
@@ -122,14 +131,18 @@ def render_settings_risk_tab(
             help="Highest account equity high-water mark reached during this segment.",
         )
 
-
     st.markdown("---")
 
-    # --- Section 2: Performance & Risk Ratios (3-Column Layout for Full-Width Labels) ---
+    # --- Section 2: Performance & Risk Ratios ---
     st.markdown("#### Risk-Adjusted Ratios & Trade Statistics")
     r_col1, r_col2, r_col3 = st.columns(3)
 
     with r_col1:
+        st.metric(
+            label="Average P/L",
+            value=f"${avg_pnl:,.2f}",
+            help="Average monetary outcome across all executed trades (winning and losing combined).",
+        )
         st.metric(
             label="Sharpe Ratio",
             value=f"{sharpe:.2f}",
@@ -147,6 +160,11 @@ def render_settings_risk_tab(
         )
 
     with r_col2:
+        st.metric(
+            label="Win / Loss Ratio",
+            value=f"{win_loss_ratio:.2f}",
+            help="Ratio of winning trade count to losing trade count (Winning Trades / Losing Trades).",
+        )
         st.metric(
             label="Sortino Ratio",
             value=f"{sortino:.2f}",
