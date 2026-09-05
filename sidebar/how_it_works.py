@@ -8,25 +8,34 @@ STANDARD_DUMMY_PATH = "dummydata.csv"
 def show_how_it_works_dialog():
     """
     Renders the modal dialog explaining dashboard features, dataset choices,
-    accepted direction variants, sample downloads, capital control, validation, and analytics tabs.
+    accepted direction variants, sample downloads, capital control, validation,
+    and analytics/ML tabs.
     """
     @st.dialog("📖 Dashboard Walkthrough & Documentation", width="large")
     def _render_dialog():
-        st.markdown("Welcome to the **Quantitative Trading & Diagnostic Suite**! This guide explains data formatting, accepted directions, sample downloads, and system usage.")
+        st.markdown(
+            "Welcome to the **Quantitative Trading & Diagnostic Suite**! This guide"
+            " explains data formatting, accepted directions, sample downloads, and"
+            " system usage."
+        )
 
         st.markdown("---")
 
         # Tabbed view inside the modal
-        doc_tab1, doc_tab2, doc_tab3, doc_tab4 = st.tabs([
+        doc_tab1, doc_tab2, doc_tab3, doc_tab4, doc_tab5 = st.tabs([
             "📂 1. Data Requirements",
             "💰 2. Capital Control",
             "🛡️ 3. Section 1: Validation",
-            "📈 4. Section 2: Trading Analysis"
+            "📈 4. Section 2: Trading Analysis",
+            "🤖 5. Section 3: Machine Learning Engine"
         ])
 
         with doc_tab1:
             st.markdown("### 📂 Data Ingestion & Accepted Schema")
-            st.markdown("Custom CSV/Excel logs (`.csv`, `.xlsx`) must align with the core schema below:")
+            st.markdown(
+                "Custom CSV/Excel logs (`.csv`, `.xlsx`) must align with the core"
+                " schema below:"
+            )
 
             # Restored Schema Table with dedicated Open/Close Direction rows
             schema_data = {
@@ -69,7 +78,11 @@ def show_how_it_works_dialog():
             dl_col1, dl_col2 = st.columns([2, 1], vertical_alignment="center")
 
             with dl_col1:
-                st.markdown("Download the standard sample CSV template to see the complete expected column structure and date formatting before uploading custom logs")
+                st.markdown(
+                    "Download the standard sample CSV template to see the complete"
+                    " expected column structure and date formatting before uploading custom"
+                    " logs"
+                )
 
             with dl_col2:
                 if os.path.exists(STANDARD_DUMMY_PATH):
@@ -86,34 +99,64 @@ def show_how_it_works_dialog():
 
         with doc_tab2:
             st.markdown("### 💰 Capital & Segment Control Ledger")
-            st.markdown("""
-            The interactive ledger in the sidebar manages portfolio equity and capital injections:
-            
-            * **Row 1 (Baseline Starting Capital):** Auto-set to the earliest trade date with a $10 baseline.
-            * **Row 2+ (Top-Ups):** Add rows to simulate capital injections (e.g., $10 on `2026-04-17`), creating new analysis **Segments**.
-            * **Active Segment Selector:** Defaults to **"All Segments Combined View"** for overall lifecycle analysis.
-            """)
+            st.markdown(
+                "* **Row 1 (Baseline Starting Capital):** Auto-set to the earliest trade date with a $10 baseline.\n"
+                "* **Row 2+ (Top-Ups):** Add rows to simulate capital injections (e.g., $10 on `2026-04-17`), creating new analysis **Segments**.\n"
+                '* **Active Segment Selector:** Defaults to **"All Segments Combined View"** for overall lifecycle analysis.'
+            )
 
         with doc_tab3:
             st.markdown("### 🛡️ Section 1: Validation Analysis Phase")
-            st.markdown("""
-            Multi-stage data integrity validation before performance analytics:
-            
-            * **Schema Verification:** Standardizes columns (`Open Time`, `Close Time`, `Pair`, `Directions`, `Price`, `Qty`, `Fees`).
-            * **FIFO Engine:** Matches entries and exits chronologically.
-            * **Orphan Detection:** Isolates **Orphan Closes** (missing entries) and **Orphan Opens** (unclosed inventory).
-            """)
+            st.markdown(
+                "Multi-stage data integrity validation before performance analytics:\n\n"
+                "* **Schema Verification:** Standardizes columns (`Open Time`, `Close Time`, `Pair`, `Directions`, `Price`, `Qty`, `Fees`).\n"
+                "* **FIFO Engine:** Matches entries and exits chronologically.\n"
+                "* **Orphan Detection:** Isolates **Orphan Closes** (missing entries) and **Orphan Opens** (unclosed inventory)."
+            )
 
         with doc_tab4:
             st.markdown("### 📈 Section 2: Trading Analysis Engine")
-            st.markdown("""
-            * **📊 Executive Summary:** High-level metrics—Net Realized PnL, Win Rate, Profit Factor, Open/Close Fees, Equity Curves, and Drawdown.
-            * **🎯 Pair Performance:** Per-pair vs. total performance breakdowns with PnL, fee analysis, and visual charts.
-            * **⏰ Session Dynamics:** Trade count and win-rate distribution mapped across market sessions with visual charting.
-            * **🔄 Session Transitions & Holds:** Tracks position entry/exit sessions, hold durations, and exit triggers (`TP`, `SL`, `Liquidation`).
-            * **🔍 Audit & Trade Logs:** Detailed execution table featuring trade session tags and blown-account audit logging.
-            * **⚙️ Session Settings & Risk:** Account parameters—Segment Start Capital, Ending Equity, Max Peak, Risk/Drawdown thresholds, and Max $/% Drawdown.
-            """)
+            st.markdown(
+                "* **📊 Executive Summary:** High-level metrics—Net Realized PnL, Win Rate, Profit Factor, Open/Close Fees, Equity Curves, and Drawdown.\n"
+                "* **🎯 Pair Performance:** Per-pair vs. total performance breakdowns with PnL, fee analysis, and visual charts.\n"
+                "* **⏰ Session Dynamics:** Trade count and win-rate distribution mapped across market sessions with visual charting.\n"
+                "* **🔄 Session Transitions & Holds:** Tracks position entry/exit sessions, hold durations, and exit triggers (`TP`, `SL`, `Liquidation`).\n"
+                "* **🔍 Audit & Trade Logs:** Detailed execution table featuring trade session tags and blown-account audit logging.\n"
+                "* **⚙️ Session Settings & Risk:** Account parameters—Segment Start Capital, Ending Equity, Max Peak, Risk/Drawdown thresholds, and Max $/% Drawdown."
+            )
+
+        with doc_tab5:
+            st.markdown("### 🤖 Section 3: Machine Learning Engine")
+            st.markdown(
+                "Advanced diagnostic analytics powered by `scikit-learn` for behavioral pattern recognition:"
+            )
+            
+            st.markdown("---")
+            
+            st.markdown("#### 🌲 Tab 1: Feature Importance & Predictive Drivers")
+            st.markdown(
+                "* **Random Forest Classifier:** Supervised model identifying key trade drivers (e.g., duration, sizing, session, direction) predicting win/loss outcomes.\n"
+                "* **Cross-Validation Accuracy:** Stratified K-Fold validation score measuring model predictive reliability without overfitting.\n"
+                "* **Gini Importance Weights:** Feature influence ranking chart displaying key factors impacting overall trade equity."
+            )
+
+            st.markdown("---")
+
+            st.markdown("#### 🎯 Tab 2: Trade Archetype Clustering")
+            st.markdown(
+                "* **K-Means Unsupervised Clustering:** Groups executions into distinct behavioral archetypes based on risk profile, duration, and position size.\n"
+                "* **Profile Segments:** Identifies trade patterns like *Quick Scalps*, *Overleveraged Holds*, or *Session Drift Trades*.\n"
+                "* **Segment Performance Metrics:** Breakdown of net PnL, win probability, and total fee impact per behavior cluster."
+            )
+
+            st.markdown("---")
+
+            st.markdown("#### 📊 Tab 3: Behavioral Edge Diagnostics")
+            st.markdown(
+                "* **Chronological Session Matrix:** Win probability heatmap mapped across 6 market sessions (Sydney, Tokyo, Hong Kong, Frankfurt, London, New York).\n"
+                "* **Hold-Time Edge Decay:** Expected value trajectory tracking hold duration vs. trade profitability decay.\n"
+                "* **Sizing Risk Dispersion:** Position size scaling analysis vs. outcome distribution."
+            )
 
         st.markdown("---")
         if st.button("Close Walkthrough", use_container_width=True):
