@@ -122,4 +122,50 @@ def render_sidebar():
         key="capital_ledger_editor"
     )
 
+    # ── 5. DATE RANGE VALIDATION ────────────────────────────────────────────────
+    trades_df = st.session_state.get("clean_trades_df", st.session_state.get("full_trades_df"))
+
+    if trades_df is not None and not trades_df.empty and edited_ledger is not None and not edited_ledger.empty:
+        time_cols = [c for c in ['Open Time', 'open_time', 'exit_time', 'close_time', 'time'] if c in trades_df.columns]
+        
+        if time_cols:
+            # Extract dataset boundaries
+            all_times = pd.concat([pd.to_datetime(trades_df[col]) for col in time_cols]).dropna()
+            if not all_times.empty:
+                min_trade_dt = all_times.min()
+                max_trade_dt = all_times.max()
+
+                out_of_bounds_entries = []
+
+                for idx, row in edited_ledger.iterrows():
+                    raw_date = row.get("Date")
+                    if pd.isna(raw_date) or not str(raw_date).strip():
+                        continue
+
+                    try:
+                        dep_dt = pd.to_datetime(raw_date)
+                        
+                        # Handle timezone alignment if necessary
+                        if dep_dt.tzinfo is not None and min_trade_dt.tzinfo is None:
+                            dep_dt = dep_dt.tz_localize(None)
+                        elif dep_dt.tzinfo is None and min_trade_dt.tzinfo is not None:
+                            dep_dt = dep_dt.tz_localize(min_trade_dt.tzinfo)
+
+                        if dep_dt < min_trade_dt or dep_dt > max_trade_dt:
+                            out_of_bounds_entries.append(f"Row {idx + 1}: `{raw_date}`")
+                    except Exception:
+                        continue
+
+                # Display warning directly beneath the ledger table if any date is out of range
+                if out_of_bounds_entries:
+                    min_str = min_trade_dt.strftime("%Y-%m-%d %H:%M:%S")
+                    max_str = max_trade_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+                    st.sidebar.error(
+                        f"⚠️ **Deposit Date Out of Range!**\n\n"
+                        f"The trade dataset ranges from **{min_str}** to **{max_str}**.\n\n"
+                        f"The following deposit dates fall outside this range:\n"
+                        + "\n".join([f"- {item}" for item in out_of_bounds_entries])
+                    )
+
     return uploaded_file, edited_ledger

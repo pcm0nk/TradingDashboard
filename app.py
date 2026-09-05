@@ -1,22 +1,25 @@
-import streamlit as st
 import pandas as pd
-
-# Import sidebar component
-from sidebar.sidebar import render_sidebar
+import streamlit as st
 
 # Import custom analysis modules
-from modules.validation_analysis import run_validation_phase
+from modules.ml_analysis import run_ml_analysis_phase
 from modules.trade_analysis import run_trade_analysis_phase
+from modules.validation_analysis import run_validation_phase
+
+# Import sidebar & components
+from sidebar.sidebar import render_sidebar
+from components.contact_modal import show_contact_modal
 
 # ── 1. PAGE CONFIGURATION & DARK QUANT THEME ──────────────────────────────────
 st.set_page_config(
     page_title="Quant Diagnostic & Trading Dashboard",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-st.markdown("""
+st.markdown(
+    """
 <style>
     .stApp { background-color: #0E1117; color: #E0E0E0; }
     div[data-testid="stMetricValue"] { font-size: 22px; color: #F1C40F; }
@@ -33,7 +36,9 @@ st.markdown("""
         color: #0E1117;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ── 2. SESSION STATE INITIALIZATION ───────────────────────────────────────────
 if "analysis_ran" not in st.session_state:
@@ -52,23 +57,44 @@ if "show_walkthrough_modal" not in st.session_state:
 # ── 3. RENDER SIDEBAR CONTROLS ────────────────────────────────────────────────
 uploaded_file, ledger_df = render_sidebar()
 
-# ── 4. MAIN APPLICATION FLOW ──────────────────────────────────────────────────
-st.markdown("<h2 style='margin-bottom: 20px;'>🛡️ Quantitative Trading & Diagnostic Suite</h2>", unsafe_allow_html=True)
+# ── 4. HEADER WITH CONTACT DEVELOPER BUTTON ──────────────────────────────────
+col_header, col_contact = st.columns([0.78, 0.22])
 
+with col_header:
+    st.markdown(
+        "<h2 style='margin-bottom: 0px;'>🛡️ Quantitative Trading & Diagnostic"
+        " Suite</h2>",
+        unsafe_allow_html=True,
+    )
+
+with col_contact:
+    st.write("")  # Spacing alignment
+    if st.button("📩 Contact Developer", use_container_width=True):
+        show_contact_modal()
+
+st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+
+# ── 5. MAIN APPLICATION FLOW ──────────────────────────────────────────────────
 if uploaded_file is None:
-    st.info("👈 Upload your trade log file in the sidebar to initiate the pipeline.")
+    st.info(
+        "👈 Upload your trade log file in the sidebar to initiate the pipeline."
+    )
     st.session_state.analysis_ran = False
 else:
     # Top-Level Navigation Tabs (Main Menu)
-    menu_tab1, menu_tab2 = st.tabs([
-        "🛡️ Section 1: Validation Analysis", 
-        "📈 Section 2: Trading Analysis Engine"
+    menu_tab1, menu_tab2, menu_tab3 = st.tabs([
+        "🛡️ Section 1: Validation Analysis",
+        "📈 Section 2: Trading Analysis Engine",
+        "🤖 Section 3: Machine Learning Engine",
     ])
+
+    # Variable to capture the sliced active segment trades across tabs
+    active_trades_df = None
 
     # ── MENU TAB 1: VALIDATION ANALYSIS ───────────────────────────────────────
     with menu_tab1:
         meta, clean_trades_df = run_validation_phase(uploaded_file)
-        
+
         # Save clean trades and trigger a rerun if this is the first time clean_trades is created
         if clean_trades_df is not None:
             if st.session_state.get("clean_trades_df") is None:
@@ -81,6 +107,29 @@ else:
     with menu_tab2:
         clean_trades = st.session_state.get("clean_trades_df")
         if clean_trades is not None and not clean_trades.empty:
-            run_trade_analysis_phase(clean_trades, meta, ledger_df)
+            # Executes Section 2 and returns the active segment sliced trades dataframe
+            res = run_trade_analysis_phase(clean_trades, meta, ledger_df)
+            if res is not None and isinstance(res, tuple) and len(res) >= 1:
+                active_trades_df = res[0]
+            else:
+                active_trades_df = clean_trades
         else:
-            st.warning("⚠️ No valid matched FIFO trades available for trading analysis.")
+            st.warning(
+                "⚠️ No valid matched FIFO trades available for trading"
+                " analysis."
+            )
+
+    # ── MENU TAB 3: MACHINE LEARNING ENGINE ───────────────────────────────────
+    with menu_tab3:
+        # Check if trade_analysis has stored an active segment slice; if not, fall back to clean_trades
+        ml_trades = st.session_state.get(
+            "active_segment_trades", st.session_state.get("clean_trades_df")
+        )
+
+        if ml_trades is not None and not ml_trades.empty:
+            run_ml_analysis_phase(trades_df=ml_trades, ledger_df=ledger_df)
+        else:
+            st.warning(
+                "⚠️ No valid trade records available in the active segment to"
+                " execute Machine Learning analysis."
+            )

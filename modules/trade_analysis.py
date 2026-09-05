@@ -280,6 +280,9 @@ def run_trade_analysis_phase(
         trades_df = active_segment['trades']
         seg_start_cap = active_segment['start_cap']
 
+        # 🎯 ADD THIS ONE LINE TO SEND THE SLICED DATA TO SECTION 3:
+        st.session_state["active_segment_trades"] = trades_df
+
         if trades_df.empty:
             st.warning(
                 f"No trades recorded within **{selected_seg_name}**."

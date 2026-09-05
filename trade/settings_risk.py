@@ -96,12 +96,12 @@ def render_settings_risk_tab(
         st.metric(
             label="Segment Start Capital",
             value=f"${seg_start_cap:,.2f}",
-            help="Initial capital deposited or carried forward into this segment.",
+            help="Initial capital deposited or carried forward into this trading segment window.",
         )
         st.metric(
             label="Max Dollar Drawdown",
             value=f"${max_dd_val:,.2f}",
-            help="Largest peak-to-trough monetary loss experienced in this segment.",
+            help="Largest monetary peak-to-trough decline in account equity during this segment.",
         )
 
     with col2:
@@ -112,12 +112,12 @@ def render_settings_risk_tab(
                 if not timeline_df.empty
                 else f"${seg_start_cap:,.2f}"
             ),
-            help="Final account balance at the end of the selected segment.",
+            help="Final account equity balance after accounting for all realized trade outcomes in this segment.",
         )
         st.metric(
             label="Max Percentage Drawdown",
             value=f"{max_dd_pct:.2f}%",
-            help="Largest peak-to-trough percentage loss relative to equity high-water mark.",
+            help="Largest relative peak-to-trough equity loss percentage compared to the highest historical equity peak.",
         )
 
     with col3:
@@ -128,7 +128,7 @@ def render_settings_risk_tab(
                 if not timeline_df.empty
                 else f"${seg_start_cap:,.2f}"
             ),
-            help="Highest account equity high-water mark reached during this segment.",
+            help="Highest historical account equity peak achieved during this segment window.",
         )
 
     st.markdown("---")
@@ -141,12 +141,12 @@ def render_settings_risk_tab(
         st.metric(
             label="Average P/L",
             value=f"${avg_pnl:,.2f}",
-            help="Average monetary outcome across all executed trades (winning and losing combined).",
+            help="Average monetary outcome across all executed trades (winning and losing positions combined).",
         )
         st.metric(
             label="Sharpe Ratio",
             value=f"{sharpe:.2f}",
-            help="Measures excess return per unit of total risk (standard deviation of trade PnLs, annualized).",
+            help="Measures risk-adjusted excess return per unit of total risk (standard deviation of trade PnLs, annualized).",
         )
         st.metric(
             label="Recovery Factor",
@@ -156,7 +156,7 @@ def render_settings_risk_tab(
         st.metric(
             label="Profit Factor",
             value=f"{profit_factor:.2f}",
-            help="Gross winning trade profits divided by gross losing trade losses.",
+            help="Gross winning trade profits divided by gross losing trade losses. Ratios above 1.0 indicate overall profitability.",
         )
 
     with r_col2:
@@ -168,7 +168,7 @@ def render_settings_risk_tab(
         st.metric(
             label="Sortino Ratio",
             value=f"{sortino:.2f}",
-            help="Measures return per unit of downside risk, ignoring positive volatility.",
+            help="Measures return per unit of downside risk, ignoring upside price volatility.",
         )
         st.metric(
             label="Risk-Adjusted Return",
@@ -178,17 +178,17 @@ def render_settings_risk_tab(
         st.metric(
             label="Trade Expectancy",
             value=f"${expectancy:,.2f}",
-            help="Expected average monetary outcome per executed trade: (Win Rate * Avg Win) - (Loss Rate * Avg Loss).",
+            help="Expected monetary gain or loss per trade: (Win Rate * Avg Win) - (Loss Rate * Avg Loss).",
         )
 
     with r_col3:
         st.metric(
             label="Average Win",
             value=f"${avg_win:,.2f}",
-            help="Average monetary profit across all winning trades.",
+            help="Average monetary profit across all winning trades in this segment.",
         )
         st.metric(
             label="Average Loss",
             value=f"${avg_loss:,.2f}",
-            help="Average monetary loss across all losing trades.",
+            help="Average monetary loss across all losing trades in this segment.",
         )
