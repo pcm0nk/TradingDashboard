@@ -34,8 +34,7 @@ def show_contact_modal():
     # ── TAB 2: DONATION & SUPPORT ─────────────────────────────────────────────
     with tab_donate:
         st.markdown(
-            "Donations help keep the project maintained, cover infrastructure,"
-            " and support adding new analytical features!"
+            "Donations help keep the project maintained and support adding new analytical features!"
         )
         st.markdown("---")
 
