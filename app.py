@@ -62,7 +62,7 @@ col_header, col_contact = st.columns([0.78, 0.22])
 
 with col_header:
     st.markdown(
-        "<h2 style='margin-bottom: 0px;'>🛡️ Quantitative Trading & Diagnostic"
+        "<h3 style='margin-bottom: 0px;'>🛡️ Quantitative Trading & Diagnostic"
         " Suite</h2>",
         unsafe_allow_html=True,
     )
