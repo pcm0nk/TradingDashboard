@@ -5,8 +5,7 @@ from machinelearning.outcome_prediction import get_model_results
 
 def render_feature_drivers_tab(trades_df: pd.DataFrame):
     """Renders Tab 2: Predictive Feature Drivers & Factor Weight Distribution."""
-    st.markdown("### 🔑 Predictive Feature Drivers")
-    st.caption(
+    st.markdown(
         "Isolates specific trade attributes (holding time, volume, session,"
         " direction) driving profitability."
     )
@@ -21,13 +20,26 @@ def render_feature_drivers_tab(trades_df: pd.DataFrame):
     top_features = results["feature_importances"].head(10)
 
     # ── Feature Weight Chart ──────────────────────────────────────────────────
-    st.markdown("#### 📊 Predictive Feature Weight Distribution")
+    st.subheader(
+        "📊 Predictive Feature Weight Distribution",
+        help=(
+            "Displays the top 10 most influential trade features based on feature"
+            " importance scores from the supervised model. Highlights which attributes"
+            " (e.g., volume, session, duration) contribute most to outcome prediction."
+        ),
+    )
     st.bar_chart(top_features, use_container_width=True)
 
     st.markdown("---")
 
     # ── Detailed Driver Ranking ───────────────────────────────────────────────
-    st.markdown("#### 💡 Top Dominant Drivers Breakdown")
+    st.subheader(
+        "💡 Top Dominant Drivers Breakdown",
+        help=(
+            "Breaks down the top predictive factors in rank order with their percentage"
+            " weight contributions to help identify primary operational edge drivers."
+        ),
+    )
     top_3 = top_features.head(5)
 
     cols = st.columns(min(len(top_3), 3))

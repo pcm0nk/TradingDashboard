@@ -18,11 +18,7 @@ def render_behavioral_diagnostics_tab(trades_df: pd.DataFrame):
     Analyzes win probabilities across detailed sessions/pairs, position sizing risk
     spikes (oversizing/overleveraging), and holding time edge decay.
     """
-    st.markdown("### 🧠 Behavioral Edge & Risk Diagnostics")
-    st.caption(
-        "Uncovers behavioral leaks, cross-market win probabilities, and risk"
-        " scaling anomalies."
-    )
+    st.markdown("Uncover behavioral leaks, cross-market win probability, and risk scaling anomalies.")
 
     if trades_df is None or trades_df.empty:
         st.warning(
@@ -97,7 +93,15 @@ def render_behavioral_diagnostics_tab(trades_df: pd.DataFrame):
         df["session"] = "Unknown Session"
 
     # ── ROW 1: Cross-Market & Session Win Probabilities (Full Width Matrix) ──
-    st.markdown("#### 🌐 Win Probability Matrix by Market & Detailed Session")
+    st.subheader(
+        "🌐 Win Probability Matrix by Market & Detailed Session",
+        help=(
+            "Cross-analyzes win rate and trade frequency across instruments and"
+            " granular trading sessions (Sydney, Tokyo, Hong Kong, Frankfurt,"
+            " London, New York). Use this matrix to identify where your edge is"
+            " strongest and avoid trading unrewarding market sessions."
+        )
+    )
 
     if symbol_col and "session" in df.columns:
         pivot_df = (
@@ -174,7 +178,14 @@ def render_behavioral_diagnostics_tab(trades_df: pd.DataFrame):
     st.markdown("---")
 
     # ── ROW 2: Position Sizing vs Realized PnL ──────────────────────────────
-    st.markdown("#### ⚖️ Position Sizing vs. Realized PnL")
+    st.subheader(
+        "⚖️ Position Sizing vs. Realized PnL",
+        help=(
+            "Plots individual trade returns against the executed lot size or volume."
+            " Isolates sizing outliers, reveals whether increased exposure yields higher"
+            " losses, and highlights position dispersion anomalies."
+        )
+    )
     fig_size = px.scatter(
         df,
         x="clean_vol",
@@ -197,7 +208,14 @@ def render_behavioral_diagnostics_tab(trades_df: pd.DataFrame):
     st.markdown("---")
 
     # ── ROW 3: Sizing Tier Efficiency Analysis ─────────────────────────────
-    st.markdown("#### 📊 Sizing Tier Expectancy")
+    st.subheader(
+        "📊 Sizing Tier Expectancy",
+        help=(
+            "Bins position sizes into volume buckets to compare average expected value ($)"
+            " and win rate. Evaluates whether scaling up position size improves overall strategy"
+            " performance or causes risk decay."
+        )
+    )
     if len(df["clean_vol"].unique()) >= 2:
         df["vol_bin"] = pd.qcut(
             df["clean_vol"],
@@ -240,7 +258,14 @@ def render_behavioral_diagnostics_tab(trades_df: pd.DataFrame):
 
     # ── ROW 4 & 5: Duration & Holding Edge Decay ────────────────────────────
     if "duration_min" in df.columns and df["duration_min"].notna().sum() >= 5:
-        st.markdown("#### ⏳ Hold Time Win Rate Decay")
+        st.subheader(
+            "⏳ Hold Time Win Rate Decay",
+            help=(
+                "Tracks how win percentage changes as position duration increases."
+                " Identifies optimal holding windows and pinpoints where trade execution"
+                " degrades into hold-and-hope behavior."
+            )
+        )
 
         valid_dur = df.dropna(subset=["duration_min"]).copy()
         if len(valid_dur["duration_min"].unique()) >= 2:
@@ -288,7 +313,14 @@ def render_behavioral_diagnostics_tab(trades_df: pd.DataFrame):
             st.markdown("---")
 
             # ROW 5 Chart: Duration Expectancy Bar Chart
-            st.markdown("#### ⏳ Duration Expectancy Breakdown")
+            st.subheader(
+                "⏳ Duration Expectancy Breakdown",
+                help=(
+                    "Measures average dollar profitability per trade duration bucket."
+                    " Reveals the point of diminishing returns where longer holding times"
+                    " actively erode profit expectations."
+                )
+            )
             fig_dur_pnl = px.bar(
                 dur_summary,
                 x="dur_bin",

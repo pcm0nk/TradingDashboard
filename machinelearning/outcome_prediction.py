@@ -23,8 +23,7 @@ def get_model_results(trades_df: pd.DataFrame):
 
 def render_outcome_prediction_tab(trades_df: pd.DataFrame):
     """Renders Tab 1: Outcome Prediction Model Performance."""
-    st.markdown("### 🎯 Outcome Prediction Model Performance")
-    st.caption(
+    st.markdown(
         "Evaluates supervised model accuracy and target class distribution on"
         " the active segment."
     )
@@ -54,6 +53,13 @@ def render_outcome_prediction_tab(trades_df: pd.DataFrame):
     X, y, results = data
 
     # ── High-Level Metric Cards ───────────────────────────────────────────────
+    st.subheader(
+        "📈 Predictive Performance Metrics",
+        help=(
+            "Summary of cross-validated model precision, total feature parameters,"
+            " evaluated trade sample count, and overall target class distribution."
+        ),
+    )
     m_col1, m_col2, m_col3, m_col4 = st.columns(4)
 
     win_count = int(y.sum())
@@ -87,7 +93,14 @@ def render_outcome_prediction_tab(trades_df: pd.DataFrame):
     st.markdown("---")
 
     # ── Performance Verdict Banner ──────────────────────────────────────────
-    st.markdown("#### ⚖️ Model Performance Verdict")
+    st.subheader(
+        "⚖️ Model Performance Verdict",
+        help=(
+            "Interprets overall cross-validation accuracy to categorize model"
+            " predictive edge into Strong Pattern Signal, Moderate Edge, or High"
+            " Noise / Random Walk."
+        ),
+    )
     if cv_acc >= 60.0:
         st.success(
             f"✅ **Strong Pattern Signal:** Achieving **{cv_acc:.1f}%** CV"

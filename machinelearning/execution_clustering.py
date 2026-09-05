@@ -11,11 +11,7 @@ def render_execution_clustering_tab(trades_df: pd.DataFrame):
 
     (Duration, Size, PnL).
     """
-    st.markdown("### 🧬 Execution Style Clustering (Unsupervised ML)")
-    st.caption(
-        "Discovers structural trading archetypes by grouping trades with"
-        " similar duration, position size, and profit profile."
-    )
+    st.markdown("Discovers structural trading archetypes by grouping trades with similar duration, position size, and profit profile.")
 
     # 1. Minimum Sample Check
     if trades_df is None or len(trades_df) < 10:
@@ -201,7 +197,14 @@ def render_execution_clustering_tab(trades_df: pd.DataFrame):
     col_metric3.metric(label="Cluster Separation", value=quality_text)
 
     # Scatter Plot Visualization
-    st.markdown("#### 📊 Execution Style Mapping")
+    st.subheader(
+        "📊 Execution Style Mapping",
+        help=(
+            "Visualizes trade behavior clusters in 3D feature space (Hold Duration vs."
+            " Realized PnL scaled by position size). Groups executions using K-Means to"
+            " separate short-term scalps, intraday setups, and extended swing holds."
+        )
+    )
     fig = px.scatter(
         clustering_df,
         x="duration_min",
@@ -222,7 +225,14 @@ def render_execution_clustering_tab(trades_df: pd.DataFrame):
     st.plotly_chart(fig, use_container_width=True)
 
     # Summary Breakdown Table
-    st.markdown("#### 📋 Style Persona Breakdown")
+    st.subheader(
+        "📋 Style Persona Breakdown",
+        help=(
+            "Aggregates core performance metrics across each discovered execution cluster."
+            " Compares trade volume, hold duration, win rate, and total profitability per"
+            " trading archetype to identify which execution style generates the highest return."
+        )
+    )
     summary_display = (
         clustering_df.groupby("Style_Persona")
         .agg(
